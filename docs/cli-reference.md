@@ -21,6 +21,7 @@
 13. [`odoo-migrator backup` - Standalone Custom-Format PostgreSQL Dump](#12-odoo-migrator-backup)
 14. [`odoo-migrator drop` - Guarded Database Dropper](#13-odoo-migrator-drop)
 15. [`odoo-migrator version` - Version Information](#14-odoo-migrator-version)
+16. [`odoo-migrator package` - Odoo-Format Deploy Zip Builder](#15-odoo-migrator-package)
 
 ---
 
@@ -472,5 +473,44 @@ Outputs the currently installed `odoo_migrator` package version.
 
 ```bash
 odoo-migrator version
+```
+
+---
+
+## 15. `odoo-migrator package`
+
+Packages a database plus its filestore as an **Odoo-format backup ZIP** (`dump.sql` + `filestore/` members) — the deploy-ready inverse of `restore`. The output mirrors what `odoo.service.db.dump_db` and OCA `auto_database_backup` produce, so it uploads directly through the Odoo database manager or restores with `pg_restore`/`psql` + a filestore copy.
+
+```bash
+odoo-migrator package [OPTIONS] DB
+```
+
+### Arguments
+
+- `DB`: Exact PostgreSQL database name (e.g. the final migrated database).
+
+### Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--out` | Path | `<backups_dir>/<DB>_deploy_<stamp>.zip` | Output zip path |
+| `--no-filestore` | Flag | `False` | Build a DB-only zip (no `filestore/` members) |
+| `--verbose`, `-v` | Flag | `False` | Enable debug logging |
+
+### Format
+
+- `dump.sql`: plain-format `pg_dump` (restorable via `psql`, like VPS backups produced by `auto_database_backup`).
+- `filestore/<sha-prefix>/<file>`: mirrors the local filestore tree for the database.
+
+### Safety Invariants
+
+- Refuses to overwrite an existing output zip.
+- Refuses to run when the database does not exist.
+
+### Example
+
+```bash
+uv run odoo-migrator package BYQ8
+# -> /opt/PW/data/backups/BYQ8_deploy_20260907_105426.zip
 ```
 

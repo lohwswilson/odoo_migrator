@@ -306,3 +306,47 @@ def restore_from_zip(db_name: str, zip_path: Path, *, restore_filestore: bool = 
         "base_version": base_version,
         "filestore_files": filestore_files,
     }
+
+
+def package_zip(db_name: str, out_path: Path | None = None,
+                *, include_filestore: bool = True) -> Path:
+    """Build an Odoo-format backup zip (dump.sql + filestore/) for deployment.
+
+    Mirrors what `odoo.service.db.dump_db` and auto_database_backup produce —
+    the exact format `restore_from_zip` and the Odoo database manager consume.
+    dump.sql is plain-format pg_dump (restorable via psql, like the VPS
+    backups); filestore/ members mirror the local filestore tree.
+    """
+    if not database_exists(db_name):
+        raise PGError(f"Database does not exist: {db_name}")
+    if out_path is None:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = config.backups_dir() / f"{db_name}_deploy_{stamp}.zip"
+    out_path = Path(out_path)
+    if out_path.exists():
+        raise PGError(f"Output already exists: {out_path}")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fs = config.filestore_dir(db_name)
+    fs_members: list[Path] = []
+    if include_filestore and fs.exists():
+        fs_members = [f for f in sorted(fs.rglob("*")) if f.is_file()]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dump_sql = Path(tmp) / "dump.sql"
+        _run(
+            [str(config.pg_bin("pg_dump"))] + _base_args()
+            + ["-f", str(dump_sql), db_name]
+        )
+        with zipfile.ZipFile(
+            out_path, "w", zipfile.ZIP_DEFLATED, allowZip64=True
+        ) as zf:
+            zf.write(dump_sql, "dump.sql")
+            for f in fs_members:
+                zf.write(f, Path("filestore") / f.relative_to(fs))
+
+    logger.info(
+        "Package: %s (%.1f MB, %d filestore files)",
+        out_path, out_path.stat().st_size / 1e6, len(fs_members),
+    )
+    return out_path

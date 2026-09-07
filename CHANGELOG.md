@@ -6,6 +6,14 @@ Hardening fixes surfaced and verified during the first real production
 migration run (16 → 17 → 18). Each fix was found by an actual failure or
 false-positive gate, not by review.
 
+### Added
+
+- **`package` command + `pg.package_zip()`** — build an Odoo-format deploy
+  zip (`dump.sql` plain pg_dump + `filestore/` members) from any database:
+  the deploy-ready inverse of `restore`, uploadable via the Odoo database
+  manager or `auto_database_backup`-compatible flows. Refuses to overwrite
+  an existing output.
+
 ### Fixed
 
 - **`pg.py` `model_modules()`** — table-ownership attribution was built on

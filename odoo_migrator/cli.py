@@ -161,6 +161,29 @@ def restore(
 
 
 @app.command()
+def package(
+    db: str = typer.Argument(..., help="Database name (e.g. BYQ8)"),
+    out: Path = typer.Option(None, "--out", help="Output zip path (default: backups dir, <db>_deploy_<stamp>.zip)"),
+    no_filestore: bool = typer.Option(False, "--no-filestore"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+):
+    """Package a DB + filestore as an Odoo-format backup zip (deploy-ready).
+
+    The inverse of `restore`: produces dump.sql (plain pg_dump) + filestore/
+    members — uploadable via the Odoo database manager or deployable with
+    pg_restore + filestore rsync.
+    """
+    _setup(verbose)
+    _pg_or_die()
+    try:
+        path = pg.package_zip(db, out, include_filestore=not no_filestore)
+    except (pg.PGError, config.ConfigError) as e:
+        console.print(f"[red]Package failed:[/red] {e}")
+        raise typer.Exit(1)
+    console.print(f"[green]Deploy zip written:[/green] {path}")
+
+
+@app.command()
 def analyze(
     name: str = typer.Argument(..., help="Config name (e.g. MYDB)"),
     from_ver: int = typer.Option(None, "--from", help="Source version (default: current)"),

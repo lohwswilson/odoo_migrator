@@ -115,6 +115,7 @@ odoo-migrator
 ├── status            # Database migration dashboard (active versions & sizes)
 ├── version           # Show odoo_migrator package version
 ├── restore           # Restore Odoo zip backup (dump.sql + filestore) into PostgreSQL
+├── package           # Build Odoo-format deploy zip (dump.sql + filestore) from a DB
 ├── analyze           # Compare installed modules against target addons paths
 ├── hop               # Run a single migration hop (N -> N+1) through 14-step pipeline
 ├── chain             # Run multi-hop migrations with stop-and-verify gates
@@ -203,6 +204,14 @@ uv run odoo-migrator set-auto-install mydb_16 --modules "snailmail,iap"
 
 # Standalone custom-format pg_dump backup
 uv run odoo-migrator backup mydb_16
+```
+
+### 7. Package the Result for Deployment
+
+Build an Odoo-format backup ZIP (`dump.sql` + `filestore/`) from the migrated database — uploadable via the Odoo database manager, the inverse of `restore`:
+
+```bash
+uv run odoo-migrator package MYDB
 ```
 
 ---
