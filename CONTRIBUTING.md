@@ -62,7 +62,7 @@ uv run ruff check .
 uv run odoo-migrator doctor
 
 # Validate a database configuration via dry-run hop
-uv run odoo-migrator hop BYNQ --from 16 --to 17 --dry-run
+uv run odoo-migrator hop MYDB --from 16 --to 17 --dry-run
 ```
 
 ### Writing Automated Tests

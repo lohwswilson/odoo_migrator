@@ -63,6 +63,22 @@ def check_version(version: int) -> list[str]:
                 f"but 'import openupgradelib' fails in {config.odoo_venv(version)} "
                 f"— pip install openupgradelib into that venv"
             )
+        else:
+            # OU 17+ scripts call update_module_names(..., environment_namespec=True);
+            # stale/divergent openupgradelib builds lack the kwarg and explode mid-run.
+            proc = subprocess.run(
+                [str(python), "-c",
+                 "import pathlib, sys, openupgradelib; "
+                 "p = pathlib.Path(openupgradelib.__file__).parent / 'openupgrade.py'; "
+                 "sys.exit(0 if 'environment_namespec' in p.read_text() else 1)"],
+                capture_output=True, text=True,
+            )
+            if proc.returncode != 0:
+                problems.append(
+                    f"Odoo {version}: openupgradelib too old for OU 17+ scripts "
+                    f"(no environment_namespec) — "
+                    f"uv pip install --python {python} --upgrade openupgradelib"
+                )
     return problems
 
 
@@ -91,6 +107,12 @@ def run(
     env = os.environ.copy()
     env["PATH"] = f"{venv / 'bin'}:{env.get('PATH', '')}"
     env["VIRTUAL_ENV"] = str(venv)
+    # libpq fallbacks for odoo.conf files with db_host = False (PW.7.0):
+    # without these psycopg2 tries the unix socket /tmp/.s.PGSQL.5432,
+    # which Homebrew PostgreSQL does not provide.
+    env["PGHOST"] = str(config.db_host())
+    env["PGPORT"] = str(config.db_port())
+    env["PGUSER"] = config.db_user()
     if env_extra:
         env.update(env_extra)
 

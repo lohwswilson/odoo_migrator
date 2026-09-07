@@ -84,7 +84,7 @@ odoo-migrator status [OPTIONS]
 
 ### Columns Reported
 
-- **DB**: Config name (e.g. `BYNQ`).
+- **DB**: Config name (e.g. `MYDB`).
 - **Configured**: Defined transition path (`current_version -> target_version`).
 - **State**: State file status (`OK` if `.state.yaml` exists, else `none`).
 - **Version**: Current active version according to `.state.yaml` (flags `(yaml stale)` if YAML diverges from recorded state).
@@ -110,7 +110,7 @@ odoo-migrator restore [OPTIONS] NAME ZIP_PATH
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`). Looks up `databases/<NAME>.yaml`.
+- `NAME`: Configuration identifier (e.g. `MYDB`). Looks up `databases/<NAME>.yaml`.
 - `ZIP_PATH`: Path to the `.zip` archive exported from Odoo web backup manager.
 
 ### Options
@@ -129,7 +129,7 @@ odoo-migrator restore [OPTIONS] NAME ZIP_PATH
 ### Example
 
 ```bash
-uv run odoo-migrator restore BYNQ ~/Downloads/BYQ6_2026-09-06_15-21-18.zip --version 16
+uv run odoo-migrator restore MYDB ~/Downloads/backup_v16.zip --version 16
 ```
 
 ---
@@ -144,7 +144,7 @@ odoo-migrator analyze [OPTIONS] NAME
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`).
+- `NAME`: Configuration identifier (e.g. `MYDB`).
 
 ### Options
 
@@ -165,7 +165,7 @@ odoo-migrator analyze [OPTIONS] NAME
 ### Example
 
 ```bash
-uv run odoo-migrator analyze BYNQ --from 16 --to 18 --save-draft
+uv run odoo-migrator analyze MYDB --from 16 --to 18 --save-draft
 ```
 
 ---
@@ -180,7 +180,7 @@ odoo-migrator hop [OPTIONS] NAME
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`).
+- `NAME`: Configuration identifier (e.g. `MYDB`).
 
 ### Options
 
@@ -206,10 +206,10 @@ odoo-migrator hop [OPTIONS] NAME
 
 ```bash
 # Dry-run preview
-uv run odoo-migrator hop BYNQ --from 16 --to 17 --dry-run
+uv run odoo-migrator hop MYDB --from 16 --to 17 --dry-run
 
 # Real execution
-uv run odoo-migrator hop BYNQ --from 16 --to 17
+uv run odoo-migrator hop MYDB --from 16 --to 17
 ```
 
 ---
@@ -224,7 +224,7 @@ odoo-migrator chain [OPTIONS] NAME
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`).
+- `NAME`: Configuration identifier (e.g. `MYDB`).
 
 ### Options
 
@@ -247,10 +247,10 @@ odoo-migrator chain [OPTIONS] NAME
 
 ```bash
 # Run with stop-and-verify gate after each hop
-uv run odoo-migrator chain BYNQ --to 18
+uv run odoo-migrator chain MYDB --to 18
 
 # Unattended continuous migration across clean hops
-uv run odoo-migrator chain BYNQ --to 18 --auto
+uv run odoo-migrator chain MYDB --to 18 --auto
 ```
 
 ---
@@ -265,7 +265,7 @@ odoo-migrator verify [OPTIONS] NAME
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`).
+- `NAME`: Configuration identifier (e.g. `MYDB`).
 
 ### Options
 
@@ -287,7 +287,7 @@ odoo-migrator verify [OPTIONS] NAME
 ### Example
 
 ```bash
-uv run odoo-migrator verify BYNQ --version 17
+uv run odoo-migrator verify MYDB --version 17
 ```
 
 ---
@@ -302,7 +302,7 @@ odoo-migrator logs [OPTIONS] NAME
 
 ### Arguments
 
-- `NAME`: Configuration identifier (e.g. `BYNQ`).
+- `NAME`: Configuration identifier (e.g. `MYDB`).
 
 ### Options
 
@@ -320,7 +320,7 @@ odoo-migrator logs [OPTIONS] NAME
 ### Example
 
 ```bash
-uv run odoo-migrator logs BYNQ -n 50
+uv run odoo-migrator logs MYDB -n 50
 ```
 
 ---
@@ -335,7 +335,7 @@ odoo-migrator uninstall [OPTIONS] DB
 
 ### Arguments
 
-- `DB`: Exact PostgreSQL database name (e.g. `BYQ6`).
+- `DB`: Exact PostgreSQL database name (e.g. `mydb_16`).
 
 ### Options
 
@@ -348,7 +348,7 @@ odoo-migrator uninstall [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator uninstall BYQ6 --modules "account_accountant,account_asset" --version 16
+uv run odoo-migrator uninstall mydb_16 --modules "account_accountant,account_asset" --version 16
 ```
 
 ---
@@ -363,7 +363,7 @@ odoo-migrator install [OPTIONS] DB
 
 ### Arguments
 
-- `DB`: Exact PostgreSQL database name (e.g. `BYQ7`).
+- `DB`: Exact PostgreSQL database name (e.g. `mydb_17`).
 
 ### Options
 
@@ -376,7 +376,7 @@ odoo-migrator install [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator install BYQ7 --modules "auto_database_backup" --version 17
+uv run odoo-migrator install mydb_17 --modules "auto_database_backup" --version 17
 ```
 
 ---
@@ -403,7 +403,7 @@ odoo-migrator set-auto-install [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator set-auto-install BYQ6 --modules "snailmail,iap"
+uv run odoo-migrator set-auto-install mydb_16 --modules "snailmail,iap"
 ```
 
 ---
@@ -429,7 +429,7 @@ odoo-migrator backup [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator backup BYQ6
+uv run odoo-migrator backup mydb_16
 ```
 
 ---
@@ -461,7 +461,7 @@ odoo-migrator drop [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator drop BYQ7 --force
+uv run odoo-migrator drop mydb_17 --force
 ```
 
 ---

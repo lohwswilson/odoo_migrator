@@ -107,7 +107,7 @@ The PostgreSQL layer isolates all database operations using client binaries iden
 - **Path Enforcement**: Explicitly executes `/opt/homebrew/opt/postgresql@18/bin/{psql,createdb,dropdb,pg_dump}` to prevent system PATH conflicts.
 - **Atomic Database Cloning**: Hop target databases are created using PostgreSQL template copies:
   ```bash
-  createdb -h 127.0.0.1 -p 5432 -U wsloh -T BYQ6 BYQ7
+  createdb -h 127.0.0.1 -p 5432 -U wsloh -T <source_db> <target_db>
   ```
 - **Odoo Backup ZIP Restoration**: Parses `.zip` backups containing `dump.sql` and the `filestore/` directory:
   - Restores schema and table data directly via `psql`.

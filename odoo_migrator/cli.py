@@ -136,7 +136,7 @@ def status(
 
 @app.command()
 def restore(
-    name: str = typer.Argument(..., help="Config name (e.g. BYNQ)"),
+    name: str = typer.Argument(..., help="Config name (e.g. MYDB)"),
     zip_path: Path = typer.Argument(..., help="Odoo backup zip (dump.sql + filestore/)"),
     version: int = typer.Option(None, "--version", help="Version the DB name maps to (default: current)"),
     no_filestore: bool = typer.Option(False, "--no-filestore"),
@@ -162,7 +162,7 @@ def restore(
 
 @app.command()
 def analyze(
-    name: str = typer.Argument(..., help="Config name (e.g. BYNQ)"),
+    name: str = typer.Argument(..., help="Config name (e.g. MYDB)"),
     from_ver: int = typer.Option(None, "--from", help="Source version (default: current)"),
     to_ver: int = typer.Option(None, "--to", help="Target version (default: target)"),
     save_draft: bool = typer.Option(False, "--save-draft", help="Write draft hop config file"),

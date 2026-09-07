@@ -1,0 +1,49 @@
+name: MYDB
+full_name: Example Company Pte Ltd
+
+databases:
+  16: mydb_16
+  17: mydb_17
+  18: mydb_18
+
+current_version: 16
+target_version: 18
+
+hops:
+  16_to_17:
+    modules_to_remove:
+      # Enterprise modules: OpenUpgrade does not migrate EE data
+      - account_accountant
+      - account_asset
+      - account_reports
+      # Upstream removals or deprecated third-party addons
+      - web_kanban_gauge
+    auto_install_false:
+      - snailmail
+      - iap
+    pre_sql:
+      # Example: clean views referencing removed modules
+      - "DELETE FROM ir_ui_view WHERE arch_db ILIKE '%web_kanban_gauge%';"
+    post_copy_sql: []
+    openupgrade_patches: []
+    modules_to_reinstall: []
+    modules_to_replace: {}
+    notes: |
+      Example hop 16 to 17 configuration.
+
+  17_to_18:
+    modules_to_remove:
+      - sale_product_configurator
+    auto_install_false: []
+    modules_to_reinstall: []
+    modules_to_replace: {}
+    notes: |
+      Example hop 17 to 18 configuration.
+
+enterprise_in_addons_path:
+  16: true
+  17: true
+  18: true
+
+notes: |
+  Template database migration definition.

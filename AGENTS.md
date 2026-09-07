@@ -34,7 +34,7 @@ Layered, single package (`odoo_migrator/`):
 
 | Module | Role |
 |---|---|
-| `cli.py` | Typer app; 13 commands. All DB-name args are config names (e.g. `BYNQ`), not database names |
+| `cli.py` | Typer app; 13 commands. All DB-name args are config names (e.g. `MYDB`), not database names |
 | `config.py` | Path/env resolution. `VERSION_DIRS` maps Odoo major → workspace checkout (**`PW.6.0` = Odoo 16**, legacy naming); `OPENUPGRADE_DIRS` maps target version → `OpenUpgrade_{X}.0` scripts checkout. Unsupported versions are hard errors, never guessed |
 | `dbcfg.py` | Strict YAML load/validate: unknown keys rejected, hop keys must be `N_to_M` with M = N+1, and `db_name(v)` raises if unmapped — **v2 never invents DB names** |
 | `pipeline.py` | `run_hop()` — the 14-step orchestration below; `run_chain()` — hops with stop-and-verify gates |
@@ -57,6 +57,6 @@ Layered, single package (`odoo_migrator/`):
 - **Log gate**: any CRITICAL or ERROR line in the hop log fails the hop (`--no-log-gate` downgrades to warnings). Exit code alone is not sufficient.
 - **Never allow target overwrite**: `pre_flight` refuses when the target DB or its filestore already exists; `restore_from_zip` refuses when the DB exists. Keep these refusals.
 - **`analyze.py` mirrors Odoo's `get_modules()` exactly** — one level per addons_path entry, `isfile(<entry>/__manifest__.py)`, symlinks followed. This matters because `PW_ADDONS.{6,7,18}.0/ENTERPRISE` are symlinks to `{16,17,18}.E` checkouts. Depth-3 globs or `find` without `-L` break correctness here.
-- **Enterprise data does not migrate**: EE modules may be on the addons path (code available) but OpenUpgrade ships no EE scripts. Precedent: uninstall EE before hop 1 (see `databases/BYNQ.yaml` notes); reinstalling on 18 means fresh configuration.
+- **Enterprise data does not migrate**: EE modules may be on the addons path (code available) but OpenUpgrade ships no EE scripts. Precedent: uninstall EE before hop 1 (see `databases/example.yaml` notes); reinstalling on 18 means fresh configuration.
 - **Credentials come from env vars only**, never from YAML configs.
 - `databases/*.draft.yaml` files are analyze output; `dbcfg.list_database_configs()` excludes them — keep the `.draft` naming convention.

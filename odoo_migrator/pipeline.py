@@ -138,17 +138,6 @@ def run_hop(
         result.ok = True
         return result
 
-    # -- 1. Snapshot (SQL only) --------------------------------------------
-    installed = pg.installed_modules(source_db)
-    snapshot = {
-        "modules": [m["name"] for m in installed],
-        "tables": pg.table_counts(source_db),
-        "model_modules": pg.model_modules(source_db),
-    }
-    state_mod.save_snapshot(cfg.name, from_ver, snapshot)
-    logger.info("Snapshot: %d modules, %d tables",
-                len(snapshot["modules"]), len(snapshot["tables"]))
-
     # -- 2. Backup ----------------------------------------------------------
     if not skip_backup:
         try:
@@ -191,6 +180,21 @@ def run_hop(
         if rc != 0:
             result.error(f"-u all on source failed (exit {rc}) — see {log_path}")
             return result
+
+    # -- 6b. Snapshot (SQL only — baseline for verify) -------------------------
+    # Taken AFTER uninstall/pre-SQL/-u all: the source as handed to
+    # OpenUpgrade. Planned churn (uninstalled modules' xmlids, -u view
+    # cleanup) is not misreported as record loss — what OpenUpgrade itself
+    # does to record counts is what the gate judges.
+    installed = pg.installed_modules(source_db)
+    snapshot = {
+        "modules": [m["name"] for m in installed],
+        "tables": pg.table_counts(source_db),
+        "model_modules": pg.model_modules(source_db),
+    }
+    state_mod.save_snapshot(cfg.name, from_ver, snapshot)
+    logger.info("Snapshot (baseline): %d modules, %d tables",
+                len(snapshot["modules"]), len(snapshot["tables"]))
 
     # -- 7. Copy database + filestore ------------------------------------------
     try:
@@ -245,10 +249,6 @@ def run_hop(
     finally:
         _restore_patches(patch_backups)
 
-    if rc != 0:
-        result.error(f"OpenUpgrade failed (exit {rc}) — rollback: drop {target_db}, "
-                     f"pg_restore -d {source_db} <backup>")
-
     # -- 11. Log gate ---------------------------------------------------------------
     report = logparse.parse_log(log_path, exit_code=rc)
     result.log_summary = report.summary()
@@ -258,6 +258,14 @@ def run_hop(
         (result.errors if log_gate else result.warnings).append(f"ERROR: {line}")
     for line in report.warnings[:20]:
         result.warnings.append(f"log: {line}")
+
+    if rc != 0:
+        result.error(f"OpenUpgrade failed (exit {rc}) — rollback: drop {target_db}, "
+                     f"pg_restore -d {source_db} <backup>")
+        state_mod.record_hop(cfg.name, from_ver, to_ver, ok=False,
+                             log=str(log_path),
+                             verify_summary=result.log_summary)
+        return result
 
     # -- 12. Reinstall / replace (odoo shell on target) ---------------------------------
     reinstall = hop.get("modules_to_reinstall", [])

@@ -39,3 +39,8 @@ htmlcov/
 # Transient analysis drafts and local runtime migration states
 databases/*.draft.yaml
 databases/states/
+
+# Database configs: ignore real client configs, keep template
+databases/*.yaml
+!databases/example.yaml
+
