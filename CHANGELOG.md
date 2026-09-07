@@ -18,7 +18,9 @@ false-positive gate, not by review.
   zip (`dump.sql` plain pg_dump + `filestore/` members) from any database:
   the deploy-ready inverse of `restore`, uploadable via the Odoo database
   manager or `auto_database_backup`-compatible flows. Refuses to overwrite
-  an existing output.
+  an existing output. The dump uses `--no-owner --no-privileges` so objects
+  are owned by whoever restores — portable across hosts (round-trip
+  verified: createdb → psql restore with zero errors → registry boots).
 
 ### Fixed
 

@@ -334,9 +334,12 @@ def package_zip(db_name: str, out_path: Path | None = None,
 
     with tempfile.TemporaryDirectory() as tmp:
         dump_sql = Path(tmp) / "dump.sql"
+        # --no-owner/--no-privileges: objects become owned by whoever restores
+        # the dump — portable across hosts where the source role doesn't exist
+        # (avoids ALTER OWNER errors during the VPS restore).
         _run(
             [str(config.pg_bin("pg_dump"))] + _base_args()
-            + ["-f", str(dump_sql), db_name]
+            + ["--no-owner", "--no-privileges", "-f", str(dump_sql), db_name]
         )
         with zipfile.ZipFile(
             out_path, "w", zipfile.ZIP_DEFLATED, allowZip64=True
