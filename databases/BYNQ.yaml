@@ -1,0 +1,66 @@
+name: BYNQ
+full_name: BYNQ
+
+databases:
+  16: BYQ6
+  17: BYQ7
+  18: BYQ8
+
+current_version: 16
+target_version: 18
+
+hops:
+  16_to_17:
+    modules_to_remove:
+      # Enterprise — OpenUpgrade cannot migrate EE data; removed before the
+      # first hop per SEQ/ANSIS precedent (code IS on the hop paths via the
+      # ENTERPRISE symlinks, but data migration is unsupported).
+      - account_accountant
+      - account_asset
+      - account_bank_statement_import
+      - account_bank_statement_import_camt
+      - account_bank_statement_import_csv
+      - account_bank_statement_import_ofx
+      - account_followup
+      - account_reports
+      - account_reports_tax_reminder
+      - l10n_sg_reports
+      - snailmail_account_followup
+      # Community / custom gaps (verified by odoo-migrator analyze 2026-09-07)
+      - web_kanban_gauge            # removed upstream in 17 (merged into web)
+      - auto_database_backup        # OCA, not cloned for v17 (reinstall after 18 optional)
+      - account_payment_invoice_online_payment_patch  # v16-only custom patch
+    auto_install_false: []
+    modules_to_reinstall: []
+    modules_to_replace: {}
+    notes: |
+      Source backup: BYQ6_2026-09-06_15-21-18.zip (PG 18.6 dump from
+      production; restored locally 2026-09-07 — 72 installed modules,
+      base 16.0.1.3, matches analyze).
+      muk_web_theme IS available in v17/v18 OCA trees — KEPT (decision
+      2026-09-07: muk theme removal applies only to SEQ databases).
+      payment_custom / social_media are customs dropped into the core
+      addons dir of all three versions — carried as-is (name-collision with
+      standard Odoo 17/18 modules; OpenUpgrade ships scripts for the
+      standard ones — verify compatibility).
+
+  17_to_18:
+    modules_to_remove:
+      - sale_product_configurator     # merged into sale in 18
+      - account_reports_tax_reminder  # gone in 18.E too (merged into account_reports); already removed at hop 1 — listed for safety
+    auto_install_false: []
+    modules_to_reinstall:
+      - auto_database_backup          # optional: re-clone exists in v18 OCA
+    modules_to_replace: {}
+    notes: |
+      PW_ADDONS.18.0/ENTERPRISE is a SYMLINK to top-level 18.E and IS on the
+      v18 odoo.conf addons_path — EE code is available at 18 (customers/
+      also vendors account_accountant + account_reports via symlinks).
+      OpenUpgrade still cannot migrate EE data: anything removed at hop 1
+      can only be reinstalled on 18 with FRESH configuration. Enterprise
+      stays out per SEQ/ANSIS precedent — revisit after cutover if needed.
+
+enterprise_in_addons_path:
+  16: true
+  17: true
+  18: true

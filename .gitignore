@@ -1,0 +1,41 @@
+# Python bytecode & packages
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Testing & lint caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE & OS
+.DS_Store
+.vscode/
+.idea/
+.claude/
+
+# Environment files & secrets
+.env
+.env.*
+
+# Backups, dumps & logs
+*.dump
+*.sql
+*.zip
+*.log
+
+# Transient analysis drafts and local runtime migration states
+databases/*.draft.yaml
+databases/states/

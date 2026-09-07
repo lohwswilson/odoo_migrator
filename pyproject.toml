@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "odoo_migrator"
+version = "2.0.0"
+description = "OpenUpgrade migration orchestrator v2 for the PerfectWork/ANSIS Odoo ecosystem"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.8.0",
+]
+
+[project.scripts]
+odoo-migrator = "odoo_migrator.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["odoo_migrator"]
