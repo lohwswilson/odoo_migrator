@@ -204,6 +204,10 @@ uv run odoo-migrator set-auto-install mydb_16 --modules "snailmail,iap"
 
 # Standalone custom-format pg_dump backup
 uv run odoo-migrator backup mydb_16
+
+# Housekeeping after a confirmed deploy: drop intermediate DBs/filestores/dumps
+uv run odoo-migrator cleanup MYDB          # plan only
+uv run odoo-migrator cleanup MYDB --force  # execute
 ```
 
 ### 7. Package the Result for Deployment

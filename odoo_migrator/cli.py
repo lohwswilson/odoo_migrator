@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 
 import typer
@@ -401,6 +402,85 @@ def drop(
         raise typer.Exit(1)
     pg.drop_database(db)
     console.print(f"[green]Dropped:[/green] {db}")
+
+
+def _dir_size(path: Path) -> str:
+    total = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+    return f"{total / 1e6:.1f} MB"
+
+
+@app.command()
+def cleanup(
+    name: str = typer.Argument(..., help="Config name (e.g. MYDB)"),
+    force: bool = typer.Option(False, "--force", help="Actually delete (plan-only without it)"),
+    logs: bool = typer.Option(False, "--logs", help="Also delete migration logs for this config"),
+    verbose: bool = typer.Option(False, "--verbose", "-v"),
+):
+    """Housekeeping: remove artifacts for versions BELOW the current version.
+
+    Drops intermediate databases (with backends terminated), deletes their
+    filestores, per-source pg_dump backups and snapshot files — everything
+    that is dead weight once the final database is deployed and confirmed.
+    Plan-only without --force.
+    """
+    _setup(verbose)
+    cfg = _load(name)
+    _pg_or_die()
+    cur = state_mod.current_version(cfg.name) or cfg.current_version
+
+    # Collect: databases/filestores/dumps/snapshots strictly below current.
+    targets: list[tuple[str, str, str]] = []  # (kind, display, size)
+    plan_dbs: list[str] = []
+    for ver in sorted(cfg.databases.keys()):
+        if ver >= cur:
+            continue
+        db = cfg.db_name(ver)
+        if pg.database_exists(db):
+            targets.append(("database", db, pg.database_size(db) or "?"))
+            plan_dbs.append(db)
+        fs = config.filestore_dir(db)
+        if fs.exists():
+            targets.append(("filestore", str(fs), _dir_size(fs)))
+        for dump in sorted(config.backups_dir().glob(f"{db}_*.dump")):
+            targets.append(
+                ("dump", str(dump), f"{dump.stat().st_size / 1e6:.1f} MB")
+            )
+        snap = state_mod.snapshot_path(cfg.name, ver)
+        if snap.exists():
+            targets.append(("snapshot", str(snap), f"{snap.stat().st_size / 1e6:.2f} MB"))
+    if logs:
+        for log in sorted(config.db_logs_dir(cfg.name).glob("*.log")):
+            targets.append(("log", str(log), f"{log.stat().st_size / 1e6:.2f} MB"))
+
+    table = Table(title=f"Cleanup plan for {cfg.name} (current version {cur})")
+    for col in ("Kind", "Target", "Size"):
+        table.add_column(col)
+    for kind, target, size in targets:
+        table.add_row(kind, target, size)
+    console.print(table)
+    if not targets:
+        console.print("[green]Nothing to clean — everything below version "
+                      f"{cur} is already gone.[/green]")
+        return
+    if not force:
+        console.print(
+            f"[yellow]Plan only — {len(targets)} target(s). "
+            "Re-run with --force to delete.[/yellow]"
+        )
+        return
+
+    for kind, target, _size in targets:
+        if kind == "database":
+            pg.drop_database(target)
+            console.print(f"  [red]dropped db[/red] {target}")
+        elif kind in ("filestore", "snapshot", "dump", "log"):
+            p = Path(target)
+            if p.is_dir():
+                shutil.rmtree(p)
+            else:
+                p.unlink()
+            console.print(f"  [red]deleted {kind}[/red] {target}")
+    console.print(f"[green]Cleanup complete:[/green] {len(targets)} target(s) removed.")
 
 
 def _print_result(res: pipeline.HopResult, label: str) -> None:

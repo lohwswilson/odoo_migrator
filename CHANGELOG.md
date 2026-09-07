@@ -8,6 +8,12 @@ false-positive gate, not by review.
 
 ### Added
 
+- **`cleanup` command** — post-deployment housekeeping: drops intermediate
+  databases (with backends terminated) and deletes their filestores,
+  per-source pg_dump backups and snapshot files, strictly for versions below
+  the state file's `current_version`. Plan-only by default (`--force` to
+  execute, `--logs` to also clear the audit logs); never touches the
+  current-version database, deploy zips, state files or config YAMLs.
 - **`package` command + `pg.package_zip()`** — build an Odoo-format deploy
   zip (`dump.sql` plain pg_dump + `filestore/` members) from any database:
   the deploy-ready inverse of `restore`, uploadable via the Odoo database

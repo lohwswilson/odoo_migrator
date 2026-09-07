@@ -22,6 +22,7 @@
 14. [`odoo-migrator drop` - Guarded Database Dropper](#13-odoo-migrator-drop)
 15. [`odoo-migrator version` - Version Information](#14-odoo-migrator-version)
 16. [`odoo-migrator package` - Odoo-Format Deploy Zip Builder](#15-odoo-migrator-package)
+17. [`odoo-migrator cleanup` - Post-Deployment Housekeeping](#16-odoo-migrator-cleanup)
 
 ---
 
@@ -512,5 +513,43 @@ odoo-migrator package [OPTIONS] DB
 ```bash
 uv run odoo-migrator package BYQ8
 # -> /opt/PW/data/backups/BYQ8_deploy_20260907_105426.zip
+```
+
+---
+
+## 16. `odoo-migrator cleanup`
+
+Housekeeping for everything **below the state file's `current_version`**: drops intermediate databases (terminating active backends), deletes their filestores, per-source pg_dump backups and snapshot files — the dead weight once the final database is deployed and confirmed. Run it before starting the next database's migration.
+
+```bash
+odoo-migrator cleanup [OPTIONS] NAME
+```
+
+### Arguments
+
+- `NAME`: Configuration identifier (e.g. `MYDB`). Looks up `databases/<NAME>.yaml`.
+
+### Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `--force` | Flag | `False` | Actually delete (plan-only without it) |
+| `--logs` | Flag | `False` | Also delete migration logs for this config |
+| `--verbose`, `-v` | Flag | `False` | Enable debug logging |
+
+### Safety Invariants
+
+- **Plan-only by default**: without `--force` the command prints the target table (kind, path, size) and deletes nothing.
+- **Version-scoped**: only artifacts for versions strictly below the state file's `current_version` are touched. The current-version database, its filestore, its dumps, every deploy zip and the original production backup zip are never candidates.
+- **Never touched**: state files (`states/*.state.yaml`), config YAMLs, `*.draft.yaml`, and directories not mapped in the config.
+
+### Example
+
+```bash
+# Preview (~605 MB reclaimable in the example):
+uv run odoo-migrator cleanup MYDB
+
+# Execute, including the audit logs:
+uv run odoo-migrator cleanup MYDB --force --logs
 ```
 
