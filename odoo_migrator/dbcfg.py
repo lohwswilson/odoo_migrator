@@ -143,7 +143,7 @@ class DatabaseConfig:
                 if not isinstance(rep, dict) or any(
                     not isinstance(k, str) or not isinstance(v, str) for k, v in rep.items()
                 ):
-                    problems.append(f"hops.{key}: 'modules_to_replace' must be {old: new} strings")
+                    problems.append(f"hops.{key}: 'modules_to_replace' must be {{old: new}} strings")
             if "openupgrade_patches" in hop:
                 patches = hop["openupgrade_patches"]
                 if not isinstance(patches, list):

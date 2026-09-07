@@ -163,7 +163,7 @@ def restore(
 
 @app.command()
 def package(
-    db: str = typer.Argument(..., help="Database name (e.g. BYQ8)"),
+    db: str = typer.Argument(..., help="Database name (e.g. mydb_18)"),
     out: Path = typer.Option(None, "--out", help="Output zip path (default: backups dir, <db>_deploy_<stamp>.zip)"),
     no_filestore: bool = typer.Option(False, "--no-filestore"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
@@ -367,7 +367,7 @@ def _run_shell_util(version: int, db: str, script: str, **env_extra: str):
     script_path = config.shell_scripts_dir() / script
     rc, _ = odoo.shell(version, db, script_path.read_text(),
                        log_path=config.db_logs_dir(db) / f"manual_{script}", env_extra=env_extra)
-    console.print(f"[green]done[/green]" if rc == 0 else f"[red]failed (exit {rc})[/red]")
+    console.print("[green]done[/green]" if rc == 0 else f"[red]failed (exit {rc})[/red]")
     if rc != 0:
         raise typer.Exit(1)
 

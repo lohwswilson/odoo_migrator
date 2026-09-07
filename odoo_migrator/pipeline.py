@@ -14,11 +14,13 @@ from __future__ import annotations
 
 import logging
 import shutil
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from . import analyze, config, logparse, odoo, pg, state as state_mod, verify
+from . import config, logparse, odoo, pg, state as state_mod, verify
 from .dbcfg import DatabaseConfig
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,27 @@ def _load_shell_script(name: str) -> str:
 
 def _stamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def clone_filestore(src: Path, dst: Path) -> None:
+    """Clone a filestore directory using Copy-on-Write (CoW) where supported."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "darwin":
+        # macOS APFS clonefile: instantaneous clone with zero duplicated disk space
+        try:
+            subprocess.run(["cp", "-c", "-R", str(src), str(dst)], check=True, capture_output=True)
+            return
+        except (subprocess.SubprocessError, FileNotFoundError):
+            pass
+    elif sys.platform.startswith("linux"):
+        # Linux btrfs/xfs reflink with automatic fallback
+        try:
+            subprocess.run(["cp", "--reflink=auto", "-R", str(src), str(dst)], check=True, capture_output=True)
+            return
+        except (subprocess.SubprocessError, FileNotFoundError):
+            pass
+    # Portable fallback
+    shutil.copytree(src, dst)
 
 
 def pre_flight(cfg: DatabaseConfig, from_ver: int, to_ver: int) -> list[str]:
@@ -210,8 +233,8 @@ def run_hop(
             if dst_fs.exists():
                 result.error(f"filestore destination already exists: {dst_fs}")
                 return result
-            shutil.copytree(src_fs, dst_fs)
-            logger.info("Filestore copied: %s -> %s", src_fs, dst_fs)
+            clone_filestore(src_fs, dst_fs)
+            logger.info("Filestore cloned: %s -> %s", src_fs, dst_fs)
 
     # -- 8. Post-copy SQL ------------------------------------------------------
     for sql in hop.get("post_copy_sql", []):

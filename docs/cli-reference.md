@@ -511,8 +511,8 @@ odoo-migrator package [OPTIONS] DB
 ### Example
 
 ```bash
-uv run odoo-migrator package BYQ8
-# -> /opt/PW/data/backups/BYQ8_deploy_20260907_105426.zip
+uv run odoo-migrator package mydb_18
+# -> /opt/PW/data/backups/mydb_18_deploy_20260907_105426.zip
 ```
 
 ---

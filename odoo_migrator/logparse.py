@@ -18,10 +18,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 # Odoo log lines look like:
-#   2026-09-07 14:22:01,123 123 ERROR byq7 odoo.module.module: ...
-_CRIT_RE = re.compile(r"\bCRITICAL\b")
-_ERROR_RE = re.compile(r"\bERROR\b")
-_WARN_RE = re.compile(r"\bWARNING\b")
+#   2026-09-07 14:22:01,123 123 ERROR mydb_17 odoo.module.module: ...
+_LOG_LEVEL_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3}\s+\d+\s+(?P<level>CRITICAL|ERROR|WARNING)\b"
+)
+_FALLBACK_ERR_RE = re.compile(r"^(?:CRITICAL|ERROR):\s+|Traceback \(most recent call last\):")
 _OU_RE = re.compile(r"openupgrade", re.IGNORECASE)
 
 
@@ -60,17 +61,21 @@ def parse_log(log_path: Path, exit_code: int | None = None) -> LogReport:
         key = hash(line)
         if key in seen:
             continue
-        if _CRIT_RE.search(line):
-            report.criticals.append(line.strip())
+
+        m = _LOG_LEVEL_RE.match(line)
+        if m:
+            lvl = m.group("level")
+            if lvl == "CRITICAL":
+                report.criticals.append(line.strip())
+            elif lvl == "ERROR":
+                report.errors.append(line.strip())
+            elif lvl == "WARNING":
+                report.warnings.append(line.strip())
             seen.add(key)
-            continue
-        if _ERROR_RE.search(line):
+        elif _FALLBACK_ERR_RE.search(line):
             report.errors.append(line.strip())
             seen.add(key)
-            continue
-        if _WARN_RE.search(line):
-            report.warnings.append(line.strip())
-            seen.add(key)
+
         if _OU_RE.search(line):
             report.ou_lines.append(line.strip())
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 import zipfile
@@ -251,7 +252,6 @@ def restore_from_zip(db_name: str, zip_path: Path, *, restore_filestore: bool = 
                 f"{zip_path.name}: not an Odoo backup zip (no dump.sql). "
                 f"First entries: {names[:5]}"
             )
-        dump_sql = zf.read("dump.sql").decode("utf-8", errors="replace")
         filestore_members = [n for n in names if n.startswith("filestore/")]
 
     _run([str(config.pg_bin("createdb"))] + _base_args() + [db_name])
@@ -259,15 +259,33 @@ def restore_from_zip(db_name: str, zip_path: Path, *, restore_filestore: bool = 
     # Plain Odoo dumps may contain harmless ownership/role statements for the
     # source server's roles; do NOT use ON_ERROR_STOP. Quality is gated by the
     # post-restore checks below.
-    proc = _psql(db=db_name, input_text=dump_sql, check=False)
+    #
+    # Stream dump.sql directly from the zip archive into psql stdin in chunks
+    # to avoid buffering gigabytes of SQL in Python process memory.
+    cmd = [str(config.pg_bin("psql"))] + _base_args() + ["-d", db_name]
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=_psql_env(),
+    )
+    with zipfile.ZipFile(zip_path) as zf:
+        with zf.open("dump.sql") as src:
+            shutil.copyfileobj(src, proc.stdin, length=65536)
+    if proc.stdin:
+        proc.stdin.close()
+    _, stderr_bytes = proc.communicate()
+    stderr_text = stderr_bytes.decode("utf-8", errors="replace")
+
     error_lines = [
-        l for l in proc.stderr.splitlines()
-        if l.strip().startswith("ERROR")
+        line for line in stderr_text.splitlines()
+        if line.strip().startswith("ERROR")
     ]
     if proc.returncode not in (0, 1):
         raise PGError(
             f"Restore of {zip_path.name} failed (psql rc={proc.returncode}): "
-            f"{proc.stderr.strip()[:2000]}"
+            f"{stderr_text.strip()[:2000]}"
         )
 
     installed = installed_modules(db_name)

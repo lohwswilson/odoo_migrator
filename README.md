@@ -125,6 +125,7 @@ odoo-migrator
 ├── install           # Install modules via odoo-bin shell
 ├── set-auto-install  # Disable module auto_install flag directly via SQL
 ├── backup            # pg_dump custom format database backup
+├── cleanup           # Housekeeping: drop intermediate databases/artifacts below current version
 └── drop              # Guarded database drop utility (requires --force)
 ```
 
@@ -215,7 +216,7 @@ uv run odoo-migrator cleanup MYDB --force  # execute
 Build an Odoo-format backup ZIP (`dump.sql` + `filestore/`) from the migrated database — uploadable via the Odoo database manager, the inverse of `restore`:
 
 ```bash
-uv run odoo-migrator package MYDB
+uv run odoo-migrator package mydb_18
 ```
 
 ---

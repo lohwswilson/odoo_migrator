@@ -37,7 +37,10 @@ else:
         if not _rec:
             print("om: SKIP %s (absent)" % _name)
             continue
-        if _rec.state != 'installed':
+        if _rec.state in ('to upgrade', 'to install'):
+            print("om: NORMALIZING %s state %s -> installed" % (_name, _rec.state))
+            _rec.write({'state': 'installed'})
+        elif _rec.state != 'installed':
             print("om: SKIP %s (state=%s)" % (_name, _rec.state))
             continue
         try:

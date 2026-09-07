@@ -17,8 +17,10 @@ modules are drafted as first-hop removals with an explanatory verdict.
 
 from __future__ import annotations
 
+import ast
 import configparser
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -60,10 +62,25 @@ def _classify_root(root: Path) -> str:
     return f"other:{name}"
 
 
+def is_manifest_installable(manifest_path: Path) -> bool:
+    """Inspect __manifest__.py to check if 'installable' is explicitly set to False."""
+    try:
+        content = manifest_path.read_text(encoding="utf-8", errors="replace")
+        data = ast.literal_eval(content)
+        if isinstance(data, dict):
+            return bool(data.get("installable", True))
+    except Exception:
+        # Fallback for manifests containing non-literal expressions or syntax errors
+        m = re.search(r"['\"]installable['\"]\s*:\s*(False|True)", content)
+        if m:
+            return m.group(1) == "True"
+    return True
+
+
 def index_modules(paths: list[Path], *, origin: str | None = None) -> dict[str, str]:
     """{module_name: origin} — one level per path entry, symlinks followed.
 
-    Exactly what Odoo's get_modules() would discover (listdir + isfile).
+    Matches Odoo's get_modules() discovery (listdir + isfile + installable).
     """
     index: dict[str, str] = {}
     for root in paths:
@@ -77,8 +94,12 @@ def index_modules(paths: list[Path], *, origin: str | None = None) -> dict[str, 
             logger.warning("Cannot list %s: %s", root, e)
             continue
         for entry in entries:
-            if (entry / "__manifest__.py").is_file():
-                index.setdefault(entry.name, label)
+            manifest = entry / "__manifest__.py"
+            if manifest.is_file():
+                if is_manifest_installable(manifest):
+                    index.setdefault(entry.name, label)
+                else:
+                    logger.debug("Skipping un-installable module: %s", entry.name)
     return index
 
 
